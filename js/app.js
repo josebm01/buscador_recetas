@@ -53,24 +53,23 @@ initApp = () => {
 
             const recipeImage = document.createElement('IMG')
             recipeImage.classList.add('card-img-top')
-            recipeImage.alt = `Imagen de la receta ${strMeal}`
-            recipeImage.src = strMealThumb
+            recipeImage.alt = `Imagen de la receta ${strMeal ?? recipe.title}`
+            recipeImage.src = strMealThumb ?? recipe.img
 
             const recipeCardBody = document.createElement('DIV')
             recipeCardBody.classList.add('card-body')
 
             const recipeHeading = document.createElement('H3')
             recipeHeading.classList.add('card-title', 'mb-3')
-            recipeHeading.textContent = strMeal
+            recipeHeading.textContent = strMeal ?? recipe.title
 
             const recipeButton = document.createElement('BUTTON')
             recipeButton.classList.add('btn', 'btn-danger', 'w-100')
             recipeButton.textContent = 'Ver receta'
             
             recipeButton.onclick = function() {
-                selectRecipe(idMeal)
+                selectRecipe(idMeal ?? recipe.id )
             }
-
 
             // Inyectamos en el código HTML
             recipeCardBody.appendChild(recipeHeading)
@@ -136,7 +135,24 @@ initApp = () => {
         // Botones de cerrar y favorito
         const btnFavorite = document.createElement('BUTTON')
         btnFavorite.classList.add('btn', 'btn-danger', 'col')
-        btnFavorite.textContent = 'Guardar favorito'
+        btnFavorite.textContent = storageExists(idMeal) ? 'Eliminar favorito' : 'Guardar favorito'
+
+        
+        // localstorage
+        btnFavorite.onclick = function() {
+
+            // Verificamos si no existe en localstorage
+            if ( storageExists(idMeal) ) {
+                removeFavorite(idMeal)
+                btnFavorite.textContent = 'Guardar favorito'
+                showToast('Eliminado correctamente', false)
+                return 
+            }
+            
+            addFavorite({ id: idMeal, title: strMeal, img: strMealThumb })
+            btnFavorite.textContent = 'Eliminar favorito'
+            showToast('Agregado correctamente', true)
+        }
         
         const btnCloseModal = document.createElement('BUTTON')
         btnCloseModal.classList.add('btn', 'btn-secondary', 'col')
@@ -153,22 +169,82 @@ initApp = () => {
         modal.show()
     }
 
+    const addFavorite = ( recipe ) => {
+        const favorites = JSON.parse(localStorage.getItem('favorites')) ?? []
+        localStorage.setItem('favorites', JSON.stringify([...favorites, recipe]))   
+    }
+
+    const removeFavorite = ( id ) => {
+        const favorites = JSON.parse(localStorage.getItem('favorites')) ?? []
+        const newFavorites = favorites.filter( favorite => favorite.id !== id )
+
+        localStorage.setItem('favorites', JSON.stringify(newFavorites))
+    }
+
+    // Validar que no se repiten registros seleccinados
+    const storageExists = ( id ) => {
+        const favorites = JSON.parse(localStorage.getItem('favorites')) ?? []
+        return favorites.some( favorite => favorite.id === id )
+    }
+
+    // Mensaje
+    const showToast = ( message, type ) => {
+        const toastDiv = document.querySelector('#toast')
+        const toastBody = document.querySelector('.toast-body')
+        const toastHeader = document.querySelector('.toast-header')
+        const toast = new bootstrap.Toast(toastDiv)
+
+        // Condicionando el color del toast de acuerdo a la acción
+        toastHeader.classList.remove('bg-danger', 'bg-success')
+        type ? (toastHeader.classList.add('bg-success'))  : (toastHeader.classList.add('bg-danger'))
+         
+        toastBody.textContent = message
+
+        toast.show()
+    }
+
+
+    //* Favoritos
+    const getFavorites = () => {
+        const favorites = JSON.parse(localStorage.getItem('favorites')) ?? []
+        if ( favorites.length ) {
+
+            showRecipes(favorites)
+
+            return 
+        }
+
+        const noFavorites = document.createElement('P')
+        noFavorites.textContent = 'No hay favoritos'
+        noFavorites.classList.add('fs-4', 'text-center', 'font-bold', 'mt-5')
+        result.appendChild(noFavorites)
+        
+    }
+
+
     const cleanHTML = ( select ) => {
         while( select.firstChild ) {
             select.removeChild(select.firstChild)
         }
     }
 
-    const selectCategories = document.querySelector('#categorias')
-    selectCategories.addEventListener('change', selectCategory)
-
+    // Resultado de búsqueda
     const result = document.querySelector('#resultado')
+
     // Creación del modal
     const modal = new bootstrap.Modal('#modal', {})
 
+    const selectCategories = document.querySelector('#categorias')
+    if ( selectCategories ) {
+        selectCategories.addEventListener('change', selectCategory)
+        getCategories()
+    }
 
+    const favoritesDiv = document.querySelector('.favoritos')
+    if ( favoritesDiv ) {
+        getFavorites()
+    }
 
-    getCategories()
 }
 
 document.addEventListener('DOMContentLoaded', initApp)
