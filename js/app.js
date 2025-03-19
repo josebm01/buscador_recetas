@@ -68,8 +68,9 @@ initApp = () => {
             recipeButton.textContent = 'Ver receta'
             
             recipeButton.onclick = function() {
-                selectRecipe(idMeal ?? recipe.id )
+                selectRecipe(idMeal ?? recipe.id)
             }
+
 
             // Inyectamos en el código HTML
             recipeCardBody.appendChild(recipeHeading)
@@ -179,6 +180,11 @@ initApp = () => {
         const newFavorites = favorites.filter( favorite => favorite.id !== id )
 
         localStorage.setItem('favorites', JSON.stringify(newFavorites))
+        
+         // Solo actualiza los favoritos si se encuentra en la página de favoritos
+        if ( document.querySelector('.favoritos') ) {
+            getFavorites()
+        }
     }
 
     // Validar que no se repiten registros seleccinados
@@ -206,11 +212,11 @@ initApp = () => {
 
     //* Favoritos
     const getFavorites = () => {
+        cleanHTML(result)
+        
         const favorites = JSON.parse(localStorage.getItem('favorites')) ?? []
         if ( favorites.length ) {
-
             showRecipes(favorites)
-
             return 
         }
 
